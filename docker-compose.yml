@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  rsyslog:
+    build: ./rsyslog
+    container_name: rsyslog-client
+    volumes:
+      - ./rsyslog/rsyslog.conf:/etc/rsyslog.conf
+      - ./rsyslog/rsyslog.d/51-rsyslog-logify.conf:/etc/rsyslog.d/51-rsyslog-logify.conf
+      - ./logs:/var/log/logify  # Ensure this maps the same directory as in logify
+    ports:
+      - "514:514/udp"
+      - "514:514/tcp"
+    depends_on:
+      - logserver
+
+  logify:
+    build: ./logify
+    container_name: logify
+    volumes:
+      - ./logs:/var/log/logify  # Ensure this maps the same directory as in rsyslog
+    depends_on:
+      - rsyslog
+
+  logserver:
+    image: ubuntu:22.04
+    container_name: central-log-server
+    volumes:
+      - ./central-log-server/50-central-server.conf:/etc/rsyslog.d/50-central-server.conf
+      - ./central-logs:/var/log/central-logs
+    ports:
+      - "10514:514/tcp"
+      - "10514:514/udp"
+    command: >
+      bash -c "
+      groupadd -g 103 syslog &&
+      useradd -r -u 101 -g syslog syslog &&
+      chown -R syslog:syslog /var/log/central-logs &&
+      apt-get update &&
+      apt-get install -y rsyslog &&
+      rsyslogd -n"
