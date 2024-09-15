@@ -13,8 +13,9 @@
 .selected_editor
 .viminfo
 instrumentation/venv
-.local
-.config
+.local/*
+.config/*
 .ssh
 logs/*
 central-logs/*
+.local/share
