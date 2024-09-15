@@ -12,3 +12,5 @@
 .selected_editor
 .viminfo
 instrumentation/venv
+.local
+.config
