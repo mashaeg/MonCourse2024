@@ -1,3 +1,4 @@
+
 .cache
 .dotnet
 .vscode-server
@@ -15,3 +16,5 @@ instrumentation/venv
 .local
 .config
 .ssh
+logs/*
+central-logs/*
