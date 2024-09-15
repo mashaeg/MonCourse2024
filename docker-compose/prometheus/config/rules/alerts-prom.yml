@@ -1,0 +1,30 @@
+groups:
+  - name: alerts-prometheus
+    rules:
+
+      - alert: PrometheusConfigFailedReload
+        expr: prometheus_config_last_reload_successful == 0
+        for: 1m
+        labels:
+          severity: error
+          team: leafs
+        annotations:
+          description: 'The Prometheus Server configuration failed to load successfully. Try using `promtool`.'
+          dashboard: 'null'
+
+ 
+      - alert: ServiceExporterDown
+        expr: up{job!~"node|windows|blackbox.+|my_app"} == 0
+        for: 1m
+        labels:
+          severity: error
+          team: leafs
+        annotations:
+          description: 'Prometheus failed to communicate with the following exporter: *{{ $labels.job }}*.'
+          dashboard: 'null'
+
+
+
+
+
+

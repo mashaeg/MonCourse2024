@@ -1,0 +1,7 @@
+groups:
+  - name: rules-misc
+    rules:
+    
+      - record: container:running:total
+        expr: count(container_last_seen{name=~".+"})
+

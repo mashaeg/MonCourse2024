@@ -1,0 +1,68 @@
+global:
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_auth_username: '*****.hkhktest@gmail.com'
+  smtp_auth_identity: '*****.hkhktest@gmail.com'
+  smtp_auth_password: '************'  # Replace this with the actual password
+
+route:
+  group_by: ['alertname', 'team']
+  group_wait: 10s
+  group_interval: 15s
+  repeat_interval: 6h
+  receiver: email-logs  # Default receiver if no routes match
+  routes:
+    - match_re:
+        team: 'raptors|leafs'
+      receiver: email-logs
+      continue: true
+      routes:
+        - match:
+            severity: 'error'
+          receiver: email-logs
+        - match:
+            severity: 'warn'
+          receiver: slack-warn
+        - match:
+            severity: 'urgent'
+          receiver: slack-urgent
+
+inhibit_rules:
+  - source_match:
+      severity: 'urgent'
+    target_match:
+      severity: 'warn'
+    equal: ['alertname', 'instance']
+  
+receivers:
+  - name: 'email-logs'
+    email_configs:
+      - to: '*****.hkhktest@gmail.com'
+        from: '*****.hkhktest@gmail.com'
+
+  - name: 'slack-error'
+    slack_configs:
+      - channel: '#alert-error'
+        api_url: 'https://hooks.slack.com/services/*****'
+        send_resolved: true
+        title: '{{ template "custom_title" . }}'
+        text: '{{ template "custom_slack_message" . }}'
+
+  - name: 'slack-warn'
+    slack_configs:
+      - channel: '#alert-warn'
+        api_url: 'https://hooks.slack.com/services/*****'
+        send_resolved: true
+        title: '{{ template "custom_title" . }}'
+        text: '{{ template "custom_slack_message" . }}'
+
+  - name: 'slack-urgent'
+    slack_configs:
+      - channel: '#alert-urgent'
+        icon_url: 'https://cdn3.iconfinder.com/data/icons/tango-icon-library/48/software-update-urgent-512.png'
+        api_url: 'https://hooks.slack.com/services/*****'
+        send_resolved: true
+        title: '{{ template "custom_title" . }}'
+        text: '{{ template "custom_slack_message" . }}'
+
+templates:
+  - 'templates/context.tmpl'

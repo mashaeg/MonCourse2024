@@ -1,0 +1,14 @@
+.cache
+.dotnet
+.vscode-server
+.*/venv/*
+.bash_history
+.bash_logout
+.bashrc
+.motd_shown
+.profile
+.sudo_as_admin_successful
+.gitconfig
+.selected_editor
+.viminfo
+instrumentation/venv

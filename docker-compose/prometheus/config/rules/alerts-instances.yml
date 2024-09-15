@@ -1,0 +1,106 @@
+groups:
+  - name: alerts-instances
+    rules:
+
+      - record: job:node_cpu_seconds:usage
+        expr: ((sum without(cpu, mode)(irate(node_cpu_seconds_total{mode!="idle"}[5m]))/count without(cpu)(count without(mode)(node_cpu_seconds_total))) * 100)
+      - alert: CPURateAbove20%
+        expr: 60 > job:node_cpu_seconds:usage > 20
+        for: 1m
+        labels:
+          severity: warn
+          team: raptors
+        annotations:
+          description: 'CPU usage on `{{ $labels.instance }}` has reached *{{ $value }}%*.'
+          dashboard: 
+          
+      - alert: CPURateAbove60%
+        expr: job:node_cpu_seconds:usage >= 60
+        for: 1m
+        labels:
+          severity: urgent
+          team: raptors, leafs
+        annotations:
+          description: 'CPU usage on `{{ $labels.instance }}` has reached *{{ $value }}%*.'
+          dashboard: 
+          
+      - record: job:node_mem_available:usage
+        expr: (1-(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 
+      - alert: MemoryUsageAbove75%
+        expr: job:node_mem_available:usage > 75
+        for: 1m
+        labels:
+          severity: urgent
+          team: raptors
+        annotations:
+          description: 'Memory usage on `{{ $labels.instance }}` has reached *{{ $value }}%*.'
+          dashboard: 
+          
+      - record: job:node_fs_free:avail
+        expr: ((sum by(instance)(node_filesystem_free_bytes)) / (sum by(instance)(node_filesystem_size_bytes))) * 100 
+      - alert: FreeDiskSpaceLessThan20%
+        expr: job:node_fs_free:avail < 20
+        for: 1m
+        labels:
+          severity: warn
+          team: raptors
+        annotations:
+          description: 'Free disk space on `{{ $labels.instance }}` is only at *{{ $value }}%*.'
+          dashboard: 
+          
+      - record: job:node_fs_free:predict
+        expr: (predict_linear(node_filesystem_free_bytes{device=~"/dev/sda.+"}[1h], (6 * 3600))) / (node_filesystem_size_bytes{device=~"/dev/sda.+"}) * 100
+      - alert: FreeDiskSpaceProjectedToBeLessThan10%InSixHours
+        expr: job:node_fs_free:predict < 10
+        for: 1m
+        labels:
+          severity: error
+          team: raptors, leafs
+        annotations:
+          description: '`{{ $labels.instance }}` is expected to only have *{{ $value }}%* free disk space in 6 hours.'
+          dashboard: 
+          
+      - record: job:node:up:state
+        expr: avg_over_time(up{job=~"node|windows"} [30s]) 
+      - alert: SomeInstancesAreDown
+        expr: job:node:up:state < 1
+        for: 1m
+        labels:
+          severity: warn
+          team: raptors
+        annotations:
+          description: '`{{ $labels.instance }}` is down.'
+          dashboard: 
+          
+      - record: job:node:up:state:avg
+        expr: ((count((avg_over_time(up{job=~"node|windows"} [30s])) < 1) / count(up{job=~"node|windows"})) * 100)
+      - alert: LessThan15%OfInstancesDown
+        expr: job:node:up:state:avg < 15
+        for: 1m
+        labels:
+          severity: warn
+          team: raptors
+        annotations:
+          description: '*{{ $value }}%* of instances are running.'
+          dashboard: 
+          
+      - alert: MoreThan50%InstancesDown
+        expr: job:node:up:state:avg >= 50
+        for: 1m
+        labels:
+          severity: urgent
+          team: raptors
+        annotations:
+          description: 'Only *{{ $value }}%* of instances are running.'
+          dashboard: 'null'
+          
+      - alert: "GameOver...Respawn?"
+        expr: count(job:node:up:state) - count(job:node:up:state == 0) == 1
+        for: 1m
+        labels:
+          severity: urgent
+          team: raptors, leafs
+        annotations:
+          description: 'You only have *{{ $value }}* instances running right now...'
+          dashboard: 
+          

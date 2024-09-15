@@ -1,0 +1,41 @@
+groups:
+  - name: alerts-container
+    rules:
+
+      - record: job:container:state
+        expr: time() - sum by(name)(container_last_seen{instance=~".+47.+"}) 
+      - alert: ContainerStoppedRunningRecently
+        expr: job:container:state > 60
+        for: 1m
+        labels:
+          severity: warn
+          team: raptors, leafs
+        annotations:
+          description: 'Container *{{ $labels.name }}* stopped running.'
+          dashboard: 'none'
+
+
+      - record: job:webapp:state
+        expr: time() - app_requests_created{job="my_app"} 
+      - alert: WebappRestartedRecently
+        expr: job:webapp:state < 120
+        for: 1m
+        labels:
+          severity: error
+          team: leafs
+        annotations:
+          description: 'Job *{{ $labels.job }}* was recently restarted.'
+          dashboard: 'http://172.17.114.244:9090/graph?g0.expr=job%3Awebapp%3Astate&g0.tab=1&g0.display_mode=lines&g0.show_exemplars=0&g0.range_input=1h'
+          
+
+      - record: job:webapp:probe
+        expr: probe_success{instance=~".+47.+"} 
+      - alert: WebAppUnreachable
+        expr: job:webapp:probe == 0
+        for: 1m
+        labels:
+          severity: urgent
+          team: leafs
+        annotations:
+          description: 'Probe of *{{ $labels.instance }}* failed.'
+          dashboard: 'http://localhost:3000/d/bdxyq2k8x0irkb/minu-dashbaord?orgId=1&from=1726386336250&to=1726407936251'

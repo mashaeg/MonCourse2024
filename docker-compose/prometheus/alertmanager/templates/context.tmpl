@@ -1,0 +1,19 @@
+{{ define "__single_message_title" }}{{ range .Alerts.Firing }}{{ .Labels.alertname }}{{ end }}{{ range .Alerts.Resolved }}{{ .Labels.alertname }}{{ end }}{{ end }}
+
+{{ define "custom_title" }}[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }} for {{ .CommonLabels.job }}
+     {{- if gt (len .CommonLabels) (len .GroupLabels) -}}
+       {{" "}}(
+       {{- with .CommonLabels.Remove .GroupLabels.Names }}
+         {{- range $index, $label := .SortedPairs -}}
+           {{ if $index }}, {{ end }}
+           {{- $label.Name }}="{{ $label.Value -}}"
+         {{- end }}
+       {{- end -}}
+       )
+     {{- end }}{{ template "__single_message_title" . }}{{ end }}
+
+{{ define "custom_slack_message" }}{{ range .Alerts -}}
+*Description:* {{ .Annotations.description }}
+Dashboard: {{ .Annotations.dashboard }}
+{{ end }}
+{{ end }}

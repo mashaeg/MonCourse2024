@@ -1,0 +1,119 @@
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    region: "us-west"
+    dc: "datacenter-1"
+rule_files:
+  - rules/rules*.yml
+  - rules/alerts*.yml
+
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      - '172.17.114.244:9093'
+
+scrape_configs:
+- job_name: prometheus
+  honor_timestamps: true
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - 'localhost:9090'
+
+- job_name: node
+  honor_timestamps: true
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - 172.17.114.244:9100
+    labels:
+      team: leafs
+
+- job_name: 'test'
+  static_configs:
+  - targets:
+    - 172.17.114.244:5001
+
+- job_name: 'my_app'
+  static_configs:
+  - targets:
+    - 172.17.114.244:5000
+
+- job_name: 'docker-engine'
+  static_configs:
+  - targets:
+    - 172.17.114.244:9323
+
+- job_name: 'cadvisor'
+  static_configs:
+  - targets:
+    - 172.17.114.244:8080
+
+- job_name: 'blackbox'
+  static_configs:
+  - targets:
+    - 172.17.114.244:9115
+
+- job_name: 'blackbox_targets'
+  metrics_path: /probe
+  params:
+    module: [dns_google]
+  static_configs:
+  - targets:
+    - 8.8.8.8
+
+- job_name: 'blackbox-tcp'
+  metrics_path: /probe
+  params:
+    module: [tcp_connect]
+  static_configs:
+    - targets:
+      - "172.17.114.244:5000"
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance
+    - target_label: __address__
+      replacement: 127.0.0.1:9115  # Blackbox Exporter address
+
+- job_name: 'smart-id-sign-status'
+  metrics_path: /probe
+  params:
+    module: [http_smartid]
+  static_configs:
+    - targets:
+      - "https://www.smart-id.com/"
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance
+    - target_label: __address__
+      replacement: 172.17.114.244:9115
+
+- job_name: 'github-exporter'
+  scrape_interval: 2d
+  static_configs:
+    - targets:
+        - 172.17.114.244:9171
+
+- job_name: 'push-gateway'
+  honor_labels: true
+  static_configs:
+    - targets:
+        - 172.17.114.244:9091
+
+- job_name: 'grafana'
+  static_configs:
+    - targets:
+        - 172.17.114.244:3000
